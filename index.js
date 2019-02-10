@@ -1,105 +1,109 @@
 const sql = require("mysql");
 const inq = require("inquirer");
-const time = require("moment")
+const time = require("moment");
+const table = require('console.table');
+var columnify = require('columnify')
 const conOpts = {
-     host:"localhost",
-     port:"3306",
-     user:"root",
-     password:"Password1",
-     database:"bamazon"
+     host: "localhost",
+     port: "3306",
+     user: "root",
+     password: "Password1",
+     database: "bamazon"
 };
 let con = sql.createConnection(conOpts);
 
-let getProduct = function(arg){
+
+/***** SHOPPING SECTION *****/
+let getProduct = function (arg) {
      let items = [];
-     let curItem ={};
+     let curItem = {};
      let prodID = arg;
      con = sql.createConnection(conOpts);
-     con.connect(function(err){
+     con.connect(function (err) {
           if (err) throw err;
      });
      //GET CHOICES FOR DEPT LIST
-     con.query("Select * from products WHERE qty > 0 AND ?",
-     {deptID : prodID}, 
-     function(err, results){
-          if(err) throw err;
-          results.forEach( o =>{                    
-               let item = {
-                    name: `${o.prodName} - $${o.price.toFixed(2)} - remianing stock:${o.qty}`,
-                    value: o.id,
-                    qty: o.qty,
-                    prodName:o.prodName
-               }
-               items.push(item);
-          })
-          con.end();
-          inq.prompt([
-               {
-                    message: "What item do you want to purchase?",
-                    type: "list",
-                    name: "item",
-                    choices:function(){
-                         return items;
+     con.query("Select prodName, price, qty from products WHERE qty > 0 AND ?",
+          { deptID: prodID },
+          function (err, results) {
+               if (err) throw err;
+               results.forEach(o => {
+                    let item = {
+                         name: `${o.prodName} - $${o.price.toFixed(2)} - remianing stock:${o.qty}`,
+                         value: o.id,
+                         qty: o.qty,
+                         prodName: o.prodName
                     }
-               },
-               {
-                    message: "How many do you want to purchase?",
-                    type: "input",
-                    name: "qty",
-                    validate: function( value ) {
-                         var pass = !isNaN(value) && parseInt(value)>0;
-                         if (pass) {
-                              return true;
-                         } else {
-                              return "Please enter a valid number";
-                         }
-                    }
-               }
-          ])
-          .then(function (resp) {
-               let qty = parseInt(resp.qty);
-               curItem = items.find( x => {
-                    return x.value.toString() == resp.item;                    
-               });
-               if(qty<1){
-                    console.log("WTF DUDE");
-                    getProduct(prodID)
-               }else if (curItem.qty < qty){
-                    console.log("There is not enough inventory to fulill your order.");
-                    getProduct(prodID)
-                    return;
-               }
-               con = sql.createConnection(conOpts);
-               con.connect(function(err){
-                    if (err) throw err;
-               });
-               con.query("UPDATE products SET ? WHERE ?", [
+                    items.push(item);
+               })
+              
+               con.end();
+               inq.prompt([
                     {
-                         qty:curItem.qty - qty
+                         message: "What item do you want to purchase?",
+                         type: "list",
+                         name: "item",
+                         choices: function () {
+                              return items;
+                         }
                     },
                     {
-                         id: resp.item
+                         message: "How many do you want to purchase?",
+                         type: "input",
+                         name: "qty",
+                         validate: function (value) {
+                              var pass = !isNaN(value) && parseInt(value) > 0;
+                              if (pass) {
+                                   return true;
+                              } else {
+                                   return "Please enter a valid number";
+                              }
+                         }
                     }
-               ],function(err, results){
-                    if(err) throw err;
-                    console.log(qty + " " +curItem.prodName + " ordered\n\n" );
-                    welcomeScreen();
-               });
-          });
-     })    
+               ])
+                    .then(function (resp) {
+                         let qty = parseInt(resp.qty);
+                         curItem = items.find(x => {
+                              return x.value.toString() == resp.item;
+                         });
+                         if (qty < 1) {
+                              console.log("WTF DUDE");
+                              getProduct(prodID)
+                         } else if (curItem.qty < qty) {
+                              console.log("There is not enough inventory to fulill your order.");
+                              getProduct(prodID)
+                              return;
+                         }
+                         con = sql.createConnection(conOpts);
+                         con.connect(function (err) {
+                              if (err) throw err;
+                         });
+                         con.query("UPDATE products SET ? WHERE ?", [
+                              {
+                                   qty: curItem.qty - qty
+                              },
+                              {
+                                   id: resp.item
+                              }
+                         ], function (err, results) {
+                              if (err) throw err;
+                              console.log(qty + " " + curItem.prodName + " ordered\n\n");
+                              welcomeScreen();
+                         });
+                    });
+          })
 
 }
-
-let askDepartment = function(){
+let askDepartment = function () {
      let depts = [];
      con = sql.createConnection(conOpts);
-     con.connect(function(err){
+     con.connect(function (err) {
           if (err) throw err;
      });
      //GET CHOICES FOR DEPT LIST
-     con.query("Select * from department", function(err, results){
-          if(err) throw err;
-          results.forEach( o =>{                    
+     con.query("Select * from department", function (err, results) {
+          if (err) throw err;
+          results.forEach(o => {
                let dept = {
                     name: o.deptName,
                     value: o.deptID
@@ -112,18 +116,22 @@ let askDepartment = function(){
                     message: "What department do you want to look in?",
                     type: "list",
                     name: "department",
-                    choices:function(){
+                    choices: function () {
                          return depts;
-                    }                        
+                    }
                }
           ])
-          .then(function (resp) {
-               getProduct(resp.department);
-          });
-     })     
+               .then(function (resp) {
+                    getProduct(resp.department);
+               });
+     })
 }
-let checkStock = function(){
-     
+/***** END SHOPPING SECTION *****/
+
+
+
+
+
 /***** INV CHECK SECTION *****/
 let checkStock = function () {
      let depts = [];
@@ -167,11 +175,15 @@ let checkStock = function () {
           con.end();
      });
 }
-let orderInv = function(){
-     
+/***** END INV CHECK SECTION *****/
+
+
+
+let orderInv = function () {
+
 }
-let newProd = function(){
-     
+let newProd = function () {
+
 }
 
 let welcomeScreen = function () {
