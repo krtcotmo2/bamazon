@@ -124,6 +124,48 @@ let askDepartment = function(){
 }
 let checkStock = function(){
      
+/***** INV CHECK SECTION *****/
+let checkStock = function () {
+     let depts = [];
+     let numchceked = 0;
+     con = sql.createConnection(conOpts);
+     con.connect(function (err) {
+          if (err) throw err;
+     })
+     con.query("SELECT d.deptName, d.deptID, Count(p.prodName) as grp FROM PRODUCTS as p INNER JOIN department as d ON d.deptID = p.deptID WHERE qty < 10 GROUP BY d.deptID ", function (err, results) {
+          if (err) throw err;
+          depts = results;
+          depts.forEach(o => {
+               async function asyncCall() {
+                    var result = await getItemData(o.deptID);
+                    console.log("DEPARTMENT:", o.deptName.toUpperCase());
+                    let cols = columnify(result, {
+                         minWidth: 10,
+                         config: {
+                              qty: {maxWidth: 4},
+                              price: {maxWidth: 5},
+                              Product: {minWidth: 80}
+                         },
+                         columnSplitter: ' | '})
+                    console.log(cols)
+                    console.log("\n\n")
+                    numchceked++;
+                    if(numchceked == results.length){
+                         welcomeScreen();
+                    }
+               }
+               function getItemData(arg) {
+                    return new Promise(resolve => {
+                         con.query(`SELECT id as 'Product ID', prodName as Product, qty, price FROM PRODUCTS WHERE qty < 10 and deptID = ${arg} `, function (err, results) {
+                              if (err) throw err;
+                              resolve(results);
+                         });
+                    })
+               }
+               asyncCall();
+          })
+          con.end();
+     });
 }
 let orderInv = function(){
      
