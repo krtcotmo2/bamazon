@@ -1,0 +1,23 @@
+{
+  "name": "bamazon",
+  "version": "1.0.0",
+  "description": "Online store front connected to a mysql instance. Powered by mysql, node and inquirer",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krtcotmo2/bamazon.git"
+  },
+  "author": "Kurt Cooney",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/krtcotmo2/bamazon/issues"
+  },
+  "homepage": "https://github.com/krtcotmo2/bamazon#readme",
+  "dependencies": {
+    "inquirer": "^6.2.2",
+    "mysql": "^2.16.0"
+  }
+}
