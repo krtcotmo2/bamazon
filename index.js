@@ -2,7 +2,7 @@ const sql = require("mysql");
 const inq = require("inquirer");
 const time = require("moment");
 const pad = require('pad/lib/es5')
-var columnify = require('columnify')
+let columnify = require('columnify')
 const conOpts = {
      host: "localhost",
      port: "3306",
@@ -158,7 +158,7 @@ let checkStock = function () {
           depts = results;
           depts.forEach(o => {
                async function asyncCall() {
-                    var result = await getItemData(o.deptID);
+                    let result = await getItemData(o.deptID);
                     console.log("DEPARTMENT:", o.deptName.toUpperCase());
                     let cols = columnify(result, {
                          minWidth: 8,
