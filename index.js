@@ -68,18 +68,22 @@ let getProduct = function (arg) {
                          ], function (err, results) {
                               if (err) throw err;
                               //ADD DATA TO ORDERS 
+                              console.log(time().format())
+                              console.log(time.utc().format())
                               con.query("INSERT INTO purchaseitems SET ?", [
                                    {orderID: Math.floor(Math.random()*10000) + 20000,
                                    qty: qty,
                                    itemPrice: curItem.price,
-                                   itemID: resp.item}
+                                   itemID: resp.item,
+                                   purchaseDate: time.utc()
+                              }
                               ], function (err, results) {
                                    if (err) {
                                         con.end()
                                         throw err;
                                    }
                               });
-                              console.log(qty + " " + curItem.prodName + " ordered\n\n");
+                              console.log(qty + " " + curItem.prodName + " ordered for $"+(curItem.price*qty).toFixed(2)+"\n\n");
                               welcomeScreen();
                          });
                     });
