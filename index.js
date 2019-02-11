@@ -1,7 +1,7 @@
 const sql = require("mysql");
 const inq = require("inquirer");
 const time = require("moment");
-const table = require('console.table');
+const pad = require('pad/lib/es5')
 var columnify = require('columnify')
 const conOpts = {
      host: "localhost",
@@ -23,7 +23,7 @@ let getProduct = function (arg) {
           if (err) throw err;
      });
      //GET CHOICES FOR DEPT LIST
-     con.query("Select prodName, price, qty from products WHERE qty > 0 AND ?",
+     con.query("Select id, prodName, price, qty from products WHERE qty > 0 AND ?",
           { deptID: prodID },
           function (err, results) {
                if (err) throw err;
@@ -36,7 +36,7 @@ let getProduct = function (arg) {
                     }
                     items.push(item);
                })
-              
+               items.push({name:"Exit", value:0})
                con.end();
                inq.prompt([
                     {
@@ -58,10 +58,17 @@ let getProduct = function (arg) {
                               } else {
                                    return "Please enter a valid number";
                               }
+                         },
+                         when: function(arg){
+                              return arg.item != "0"
                          }
                     }
                ])
                     .then(function (resp) {
+                         if(resp.item == "0"){
+                              askDepartment();
+                              return;
+                         }
                          let qty = parseInt(resp.qty);
                          curItem = items.find(x => {
                               return x.value.toString() == resp.item;
@@ -109,7 +116,9 @@ let askDepartment = function () {
                     value: o.deptID
                }
                depts.push(dept);
+               
           })
+          depts.push({name:"Exit", value:0})
           con.end();
           inq.prompt([
                {
@@ -121,9 +130,13 @@ let askDepartment = function () {
                     }
                }
           ])
-               .then(function (resp) {
-                    getProduct(resp.department);
-               });
+          .then(function (resp) {
+               if(resp.department == "0" ){
+                    welcomeScreen();
+                    return;
+               }
+               getProduct(resp.department);
+          });
      })
 }
 /***** END SHOPPING SECTION *****/
@@ -140,7 +153,7 @@ let checkStock = function () {
      con.connect(function (err) {
           if (err) throw err;
      })
-     con.query("SELECT d.deptName, d.deptID, Count(p.prodName) as grp FROM PRODUCTS as p INNER JOIN department as d ON d.deptID = p.deptID WHERE qty < 10 GROUP BY d.deptID ", function (err, results) {
+     con.query("SELECT d.deptName, d.deptID, Count(p.prodName) as grp FROM PRODUCTS as p INNER JOIN department as d ON d.deptID = p.deptID WHERE qty <= targetQty*.15 OR  qty <= 1  GROUP BY d.deptID ", function (err, results) {
           if (err) throw err;
           depts = results;
           depts.forEach(o => {
@@ -148,10 +161,9 @@ let checkStock = function () {
                     var result = await getItemData(o.deptID);
                     console.log("DEPARTMENT:", o.deptName.toUpperCase());
                     let cols = columnify(result, {
-                         minWidth: 10,
+                         minWidth: 8,
                          config: {
                               qty: {maxWidth: 4},
-                              price: {maxWidth: 5},
                               Product: {minWidth: 80}
                          },
                          columnSplitter: ' | '})
@@ -164,7 +176,7 @@ let checkStock = function () {
                }
                function getItemData(arg) {
                     return new Promise(resolve => {
-                         con.query(`SELECT id as 'Product ID', prodName as Product, qty, price FROM PRODUCTS WHERE qty < 10 and deptID = ${arg} `, function (err, results) {
+                         con.query(`SELECT id as 'Product ID', prodName as Product, qty, price FROM PRODUCTS WHERE (qty <= targetQty*.15 OR  qty <= 1) and deptID = ${arg} `, function (err, results) {
                               if (err) throw err;
                               resolve(results);
                          });
@@ -179,9 +191,118 @@ let checkStock = function () {
 
 
 
-let orderInv = function () {
 
+
+/***** ADD INVETORY SECTION *****/
+let orderInv = function () {
+     let items = [];
+     con = sql.createConnection(conOpts);
+     con.connect(function (err) {
+          if (err) throw err;
+     });
+     //GET CHOICES FOR DEPT LIST
+     con.query("SELECT id as 'Product ID', prodName as Product, qty, price FROM PRODUCTS WHERE qty <= targetQty*.15 OR  qty <= 1 ORDER BY qty", function (err, results) {
+          if (err) throw err;
+          results.forEach(o => {
+               let prodN = o.Product.toString().substr(0, 40 );              
+               let item = {
+                    name: pad(prodN, (45), "_") + "QTY: "+ o.qty + " - PRICE: $"+o.price,
+                    value: o["Product ID"],
+                    qty: o.qty,
+                    price: o.price,
+                    prod: o.Product
+               }
+               items.push(item);
+          })
+          items.push({
+               name:"Exit",
+               value:0
+          })
+          con.end();
+          inq.prompt([
+               {
+                    message: "What product do you wish to restock?",
+                    type: "list",
+                    name: "prodID",
+                    choices:items
+               },
+               {
+                    message: "How many units are you adding to the inventory?",
+                    type: "input",
+                    name: "qty",
+                    validate: function (value) {
+                         var pass = !isNaN(value) && parseInt(value) > 0;
+                         if (pass) {
+                              return true;
+                         } else {
+                              return "Please enter a valid number";
+                         }
+                    },
+                    when: function(arg){
+                         return arg.prodID != "0"
+                    }
+               }          
+          ])
+          .then(function (resp) {
+               if(resp.prodID == "0"){
+                    welcomeScreen();
+                    return;
+               }
+               let res = resp;
+               let curItem = items.find( o => {
+                    return o.value == res.prodID;
+               })
+               inq.prompt([
+                    {
+                    message: `Are you sure you want to add ${res.qty} units to the ${curItem.prod} inventory?`,
+                    type: "confirm",
+                    name: "confirmed"
+                    }
+               ])
+               .then(function (resp){
+                    if(resp.confirmed){
+                         addInventory(res.prodID ,res.qty)
+                    }
+               })
+          });
+     });
 }
+
+function addInventory(id, qty){
+     let curQty = 0;
+     con = sql.createConnection(conOpts);
+     con.connect(function (err) {
+          if (err) throw err;
+          
+     });
+     //GET CHOICES FOR DEPT LIST
+     con.query(`SELECT qty FROM PRODUCTS WHERE id = ${id}`,
+     function (err, results) {
+          if (err) throw err;
+          curQty = parseInt(qty)+parseInt(results[0].qty);
+          con.query("UPDATE products  SET ? WHERE ?", [          
+               {qty: curQty},
+               {id: id}
+          ],function (err, results) {
+               if (err) {
+                    throw err;
+               }
+               console.log("Added", qty, "items");
+               con.end();
+               orderInv();
+          });
+     });
+     
+     
+     
+     
+}
+/***** END ADD INVETORY SECTION *****/
+
+
+
+
+
 let newProd = function () {
 
 }
