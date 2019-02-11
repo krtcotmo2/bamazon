@@ -52,7 +52,7 @@ let getProduct = function (arg) {
                          type: "input",
                          name: "qty",
                          validate: function (value) {
-                              var pass = !isNaN(value) && parseInt(value) > 0;
+                              let pass = !isNaN(value) && parseInt(value) > 0;
                               if (pass) {
                                    return true;
                               } else {
@@ -231,7 +231,7 @@ let orderInv = function () {
                     type: "input",
                     name: "qty",
                     validate: function (value) {
-                         var pass = !isNaN(value) && parseInt(value) > 0;
+                         let pass = !isNaN(value) && parseInt(value) > 0;
                          if (pass) {
                               return true;
                          } else {
@@ -350,7 +350,7 @@ let newProd = function () {
                name:"price",
                type:"input",
                validate: function (value) {
-                    var pass = !isNaN(value) && parseInt(value) > 0;
+                    let pass = !isNaN(value) && parseInt(value) > 0;
                     if (pass) {
                          return true;
                     } else {
@@ -363,7 +363,7 @@ let newProd = function () {
                name:"qty",
                type:"input",
                validate: function (value) {
-                    var pass = !isNaN(value) && parseInt(value) > 0;
+                    let pass = !isNaN(value) && parseInt(value) > 0;
                     if (pass) {
                          return true;
                     } else {
@@ -376,7 +376,7 @@ let newProd = function () {
                name:"targetQty",
                type:"input",
                validate: function (value) {
-                    var pass = !isNaN(value) && parseInt(value) > 0;
+                    let pass = !isNaN(value) && parseInt(value) > 0;
                     if (pass) {
                          return true;
                     } else {
