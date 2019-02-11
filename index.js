@@ -1,8 +1,9 @@
 const sql = require("mysql");
 const inq = require("inquirer");
 const time = require("moment");
-const pad = require('pad/lib/es5')
-let columnify = require('columnify')
+const pad = require('pad/lib/es5');
+let columnify = require('columnify');
+const theQ = require("./inqQs");
 const conOpts = {
      host: "localhost",
      port: "3306",
@@ -38,32 +39,7 @@ let getProduct = function (arg) {
                })
                items.push({name:"Exit", value:0})
                con.end();
-               inq.prompt([
-                    {
-                         message: "What item do you want to purchase?",
-                         type: "list",
-                         name: "item",
-                         choices: function () {
-                              return items;
-                         }
-                    },
-                    {
-                         message: "How many do you want to purchase?",
-                         type: "input",
-                         name: "qty",
-                         validate: function (value) {
-                              let pass = !isNaN(value) && parseInt(value) > 0;
-                              if (pass) {
-                                   return true;
-                              } else {
-                                   return "Please enter a valid number";
-                              }
-                         },
-                         when: function(arg){
-                              return arg.item != "0"
-                         }
-                    }
-               ])
+               inq.prompt(theQ.purchaseQ(items))
                     .then(function (resp) {
                          if(resp.item == "0"){
                               askDepartment();
@@ -120,16 +96,7 @@ let askDepartment = function () {
           })
           depts.push({name:"Exit", value:0})
           con.end();
-          inq.prompt([
-               {
-                    message: "What department do you want to look in?",
-                    type: "list",
-                    name: "department",
-                    choices: function () {
-                         return depts;
-                    }
-               }
-          ])
+          inq.prompt(theQ.deptQ(depts))
           .then(function (resp) {
                if(resp.department == "0" ){
                     welcomeScreen();
@@ -219,30 +186,7 @@ let orderInv = function () {
                value:0
           })
           con.end();
-          inq.prompt([
-               {
-                    message: "What product do you wish to restock?",
-                    type: "list",
-                    name: "prodID",
-                    choices:items
-               },
-               {
-                    message: "How many units are you adding to the inventory?",
-                    type: "input",
-                    name: "qty",
-                    validate: function (value) {
-                         let pass = !isNaN(value) && parseInt(value) > 0;
-                         if (pass) {
-                              return true;
-                         } else {
-                              return "Please enter a valid number";
-                         }
-                    },
-                    when: function(arg){
-                         return arg.prodID != "0"
-                    }
-               }          
-          ])
+          inq.prompt(theQ.restockQ(items))
           .then(function (resp) {
                if(resp.prodID == "0"){
                     welcomeScreen();
@@ -252,13 +196,7 @@ let orderInv = function () {
                let curItem = items.find( o => {
                     return o.value == res.prodID;
                })
-               inq.prompt([
-                    {
-                    message: `Are you sure you want to add ${res.qty} units to the ${curItem.prod} inventory?`,
-                    type: "confirm",
-                    name: "confirmed"
-                    }
-               ])
+               inq.prompt( theQ.confirmRestockQ(res, curItem))
                .then(function (resp){
                     if(resp.confirmed){
                          addInventory(res.prodID ,res.qty)
@@ -291,10 +229,6 @@ function addInventory(id, qty){
                orderInv();
           });
      });
-     
-     
-     
-     
 }
 /***** END ADD INVETORY SECTION *****/
 
@@ -318,7 +252,7 @@ let newProd = function () {
                depts.push(dept);
           });
           con.end();
-          inq.prompt(qs)
+          inq.prompt(theQ.newProdQs(depts))
           .then(function(response){
                confirmAdd(response);
           })
@@ -331,70 +265,9 @@ let newProd = function () {
                });
           })
      }
-     let qs = [
-          {
-               message:"Product Name",
-               name:"prodName",
-               type:"input"
-          },
-          {
-               message: "Product department?",
-               type:"list",
-               name:"deptID",
-               choices:function(){
-                    return depts;
-               }
-          },
-          {
-               message:"Price?",
-               name:"price",
-               type:"input",
-               validate: function (value) {
-                    let pass = !isNaN(value) && parseInt(value) > 0;
-                    if (pass) {
-                         return true;
-                    } else {
-                         return "Please enter a valid price";
-                    }
-               }
-          },
-          {
-               message:"Current Inventory?",
-               name:"qty",
-               type:"input",
-               validate: function (value) {
-                    let pass = !isNaN(value) && parseInt(value) > 0;
-                    if (pass) {
-                         return true;
-                    } else {
-                         return "Please enter a valid number";
-                    }
-               }
-          },
-          {
-               message:"Target Inventory? (Once current inventory drops to or or 15% of the traget invenotry, it appears in the low inventory report.",
-               name:"targetQty",
-               type:"input",
-               validate: function (value) {
-                    let pass = !isNaN(value) && parseInt(value) > 0;
-                    if (pass) {
-                         return true;
-                    } else {
-                         return "Please enter a valid inventory level";
-                    }
-               }
-          }
-
-     ];
      
      function confirmAdd(arg){
-          inq.prompt([{
-               type:"confirm",
-               message: `Proposed new item:\nName: ${arg.prodName}\nDepartment: ${depts.find( o =>{
-                    return arg.deptID == o.value;
-               }).name}\nPrice: ${arg.price}\nQuantity: ${arg.qty}\nTarget Inventory: ${arg.targetQty}\n`,
-               name:"confirmed"
-          }])
+          inq.prompt(theQ.confrimNewItemQ(arg, depts))
           .then(function(resp){
                if(resp.confirmed){
                     con = sql.createConnection(conOpts);
@@ -418,36 +291,7 @@ let newProd = function () {
 }
 
 let welcomeScreen = function () {
-     inq.prompt([
-          {
-               message: "What would you like to do?",
-               type: "list",
-               name: "action",
-               choices: [
-                    {
-                         name: "View Products for Sale",
-                         value: "shop"
-                    },
-                    {
-                         name: "View Low Inventory",
-                         value: "lowStock"
-                    },
-                    {
-                         name: "Add to Inventory",
-                         value: "orderInv"
-                    },
-                    {
-                         name: "Add New Product",
-                         value: "newProd"
-                    },
-                    {
-                         name: "Exit",
-                         value: "exit"
-                    }
-               ]
-
-          }
-     ])
+     inq.prompt(theQ.openQ)
           .then(function (resp) {
                switch (resp.action) {
                     case "shop":
@@ -463,6 +307,8 @@ let welcomeScreen = function () {
                          newProd();
                          break;
                     default:
+                         if(con.state == "authenticated")
+                              con.end();
                          break;
                }
           });
