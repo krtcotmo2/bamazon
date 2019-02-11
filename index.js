@@ -124,7 +124,7 @@ let checkStock = function () {
           if (err) throw err;
           depts = results;
           depts.forEach(o => {
-               async function asyncCall() {
+               async function getShortInvHandler() {
                     let result = await getItemData(o.deptID);
                     console.log("DEPARTMENT:", o.deptName.toUpperCase());
                     let cols = columnify(result, {
@@ -149,7 +149,7 @@ let checkStock = function () {
                          });
                     })
                }
-               asyncCall();
+               getShortInvHandler();
           })
           con.end();
      });
@@ -173,7 +173,7 @@ let orderInv = function () {
           results.forEach(o => {
                let prodN = o.Product.toString().substr(0, 40 );              
                let item = {
-                    name: pad(prodN, (45), "_") + "QTY: "+ o.qty + " - PRICE: $"+o.price,
+                    name: pad(prodN, (45), "-") + "QTY: "+ o.qty + " - PRICE: $"+o.price,
                     value: o["Product ID"],
                     qty: o.qty,
                     price: o.price,
@@ -200,6 +200,8 @@ let orderInv = function () {
                .then(function (resp){
                     if(resp.confirmed){
                          addInventory(res.prodID ,res.qty)
+                    }else{
+                         orderInv();
                     }
                })
           });
@@ -212,7 +214,6 @@ function addInventory(id, qty){
           if (err) throw err;
           
      });
-     //GET CHOICES FOR DEPT LIST
      con.query(`SELECT qty FROM PRODUCTS WHERE id = ${id}`,
      function (err, results) {
           if (err) throw err;
