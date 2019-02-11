@@ -18,9 +18,9 @@
   "homepage": "https://github.com/krtcotmo2/bamazon#readme",
   "dependencies": {
     "columnify": "^1.5.4",
-    "console.table": "^0.10.0",
     "inquirer": "^6.2.2",
     "moment": "^2.24.0",
-    "mysql": "^2.16.0"
+    "mysql": "^2.16.0",
+    "pad": "^2.2.2"
   }
 }
