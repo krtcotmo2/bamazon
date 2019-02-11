@@ -33,7 +33,8 @@ let getProduct = function (arg) {
                          name: `${o.prodName} - $${o.price.toFixed(2)} - remianing stock:${o.qty}`,
                          value: o.id,
                          qty: o.qty,
-                         prodName: o.prodName
+                         prodName: o.prodName,
+                         price: o.price.toFixed(2)
                     }
                     items.push(item);
                })
@@ -50,8 +51,8 @@ let getProduct = function (arg) {
                               return x.value.toString() == resp.item;
                          });
                          if (qty < 1) {
-                              console.log("WTF DUDE");
-                              getProduct(prodID)
+                              getProduct(prodID);
+                              return;
                          } else if (curItem.qty < qty) {
                               console.log("There is not enough inventory to fulill your order.");
                               getProduct(prodID)
@@ -62,20 +63,27 @@ let getProduct = function (arg) {
                               if (err) throw err;
                          });
                          con.query("UPDATE products SET ? WHERE ?", [
-                              {
-                                   qty: curItem.qty - qty
-                              },
-                              {
-                                   id: resp.item
-                              }
+                              {qty: curItem.qty - qty},
+                              {id: resp.item}
                          ], function (err, results) {
                               if (err) throw err;
+                              //ADD DATA TO ORDERS 
+                              con.query("INSERT INTO purchaseitems SET ?", [
+                                   {orderID: Math.floor(Math.random()*10000) + 20000,
+                                   qty: qty,
+                                   itemPrice: curItem.price,
+                                   itemID: resp.item}
+                              ], function (err, results) {
+                                   if (err) {
+                                        con.end()
+                                        throw err;
+                                   }
+                              });
                               console.log(qty + " " + curItem.prodName + " ordered\n\n");
                               welcomeScreen();
                          });
                     });
           })
-
 }
 let askDepartment = function () {
      let depts = [];
@@ -277,7 +285,7 @@ let newProd = function () {
                          console.log("connected");
                     });
                     let qury = "INSERT INTO products SET ?";
-                    con.query(qury,arg, function(err, results){
+                    con.query(qury, arg, function(err, results){
                          if(err) throw err;
                          console.log("Added", arg.prodName, "to inventory");
                          con.end();
