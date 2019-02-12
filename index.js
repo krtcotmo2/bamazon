@@ -1,6 +1,6 @@
 const sql = require("mysql");
 const inq = require("inquirer");
-const time = require("moment");
+const moment = require("moment");
 const pad = require('pad/lib/es5');
 let columnify = require('columnify');
 const theQ = require("./inqQs");
@@ -67,24 +67,28 @@ let getProduct = function (arg) {
                               {id: resp.item}
                          ], function (err, results) {
                               if (err) throw err;
-                              //ADD DATA TO ORDERS 
-                              console.log(time().format())
-                              console.log(time.utc().format())
-                              con.query("INSERT INTO purchaseitems SET ?", [
+                              //ADD DATA TO ORDERS  
+                              let val =  moment.utc().format("YYYY-MM-DD HH:mm:ss");
+                              //connvert back to local time
+                              //console.log(moment.utc(val).local().format("YYYY-MM-DD HH:mm:ss"))                      
+                              con.query("INSERT INTO purchaseitems SET ?", 
                                    {orderID: Math.floor(Math.random()*10000) + 20000,
                                    qty: qty,
                                    itemPrice: curItem.price,
                                    itemID: resp.item,
-                                   purchaseDate: time.utc()
+                                   purchaseDate: val
                               }
-                              ], function (err, results) {
+                              , function (err, results) {
                                    if (err) {
                                         con.end()
+                                        console.log(err);
                                         throw err;
                                    }
+                                   console.log(qty + " " + curItem.prodName + " ordered for $"+(curItem.price*qty).toFixed(2)+"\n\n");
+                                   welcomeScreen();
                               });
-                              console.log(qty + " " + curItem.prodName + " ordered for $"+(curItem.price*qty).toFixed(2)+"\n\n");
-                              welcomeScreen();
+                              
+                              
                          });
                     });
           })
