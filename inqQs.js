@@ -120,7 +120,7 @@ let openQ = [
 let deptQ = function(depts){
 return [
      {
-          message: "What department do you want to look in?",
+          message: "Welcome to Bamazon\n\nWhat department do you want to shop from?",
           type: "list",
           name: "department",
           choices: function () {
