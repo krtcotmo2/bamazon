@@ -85,6 +85,7 @@ let getProduct = function (arg) {
                                         throw err;
                                    }
                                    console.log(qty + " " + curItem.prodName + " ordered for $"+(curItem.price*qty).toFixed(2)+"\n\n");
+                                   con.end();
                                    welcomeScreen();
                               });
                               
