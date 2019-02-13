@@ -34,7 +34,7 @@ let getSales = function(){
                console.log("Depratment", o.deptName,  "Sales", o.totalSales);
                async function getSalesPrDept() {
                     let result = await getItemSales(o.deptID);
-                    console.log("\nDEPARTMENT:", o.deptName.toUpperCase());
+                    console.log(`\nDEPARTMENT: ${o.deptName.toUpperCase()} Sales: $${o.totalSales}`);
                     let cols = columnify(result, {
                          minWidth: 8,
                          config: {
@@ -45,6 +45,7 @@ let getSales = function(){
                     console.log(cols)
                     numchceked++;
                     if(numchceked == deptResult.length){
+                         console.log("\n");
                          welcomeScreen();
                     }
                }
@@ -57,7 +58,7 @@ let getSales = function(){
                          department as d ON d.deptID = p.deptID 
                          where d.deptName = '${o.deptName}'
                          GROUP BY d.deptID, p.prodName
-                         order by d.deptName, 'Total Sales' desc`, function (err, results) {
+                         order by  'Units Sold' desc`, function (err, results) {
                               if (err) throw err;
                               resolve(results);
                          });
@@ -65,6 +66,7 @@ let getSales = function(){
                }
                getSalesPrDept();
           });
+          
           welcomeScreen();
      });
 
