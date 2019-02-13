@@ -92,8 +92,8 @@ let openQ = [
           name: "action",
           choices: [
                {
-                    name: "View Products for Sale",
-                    value: "shop"
+                    name: "View Products Sales",
+                    value: "viewSales"
                },
                {
                     name: "View Low Inventory",

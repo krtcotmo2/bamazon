@@ -115,7 +115,6 @@ let askDepartment = function () {
           inq.prompt(theQ.deptQ(depts))
           .then(function (resp) {
                if(resp.department == "0" ){
-                    welcomeScreen();
                     return;
                }
                getProduct(resp.department);
