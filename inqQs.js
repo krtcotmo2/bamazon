@@ -85,6 +85,22 @@ let newProdQs = function(depts){
 ]
 };
 
+let newDeptQs = [
+     {
+          message: "What is the name of the new department?",
+          type: "input",
+          name: "deptName"
+     }
+];
+
+let confrimNewDeptQ = function(theDept){
+     return [{
+     type:"confirm",
+     message: `Proposed new Department:\nName: ${theDept.deptName}\n`,
+     name:"confirmed"
+}]
+}
+
 let openQ = [
      {
           message: "What would you like to do?",
@@ -106,6 +122,10 @@ let openQ = [
                {
                     name: "Add New Product",
                     value: "newProd"
+               },
+               {
+                    name: "Add New Department",
+                    value: "newDept"
                },
                {
                     name: "Exit",
@@ -177,4 +197,4 @@ let confrimNewItemQ = function(theItem, depts){
 }]
 }
 
-module.exports = {purchaseQ, newProdQs, openQ, deptQ, restockQ, confirmRestockQ,confrimNewItemQ}
+module.exports = {purchaseQ, newProdQs, openQ, deptQ, restockQ, confirmRestockQ,confrimNewItemQ, newDeptQs, confrimNewDeptQ}
