@@ -14,119 +14,65 @@ const conOpts = {
 let con = sql.createConnection(conOpts);
 
 
-/***** SHOPPING SECTION *****/
-let getProduct = function (arg) {
-     let items = [];
-     let curItem = {};
-     let prodID = arg;
+let getSales = function(){
      con = sql.createConnection(conOpts);
-     con.connect(function (err) {
-          if (err) throw err;
+     con.connect(function(err){
+          if(err) throw err;
      });
-     //GET CHOICES FOR DEPT LIST
-     con.query("Select id, prodName, price, qty from products WHERE qty > 0 AND ?",
-          { deptID: prodID },
-          function (err, results) {
-               if (err) throw err;
-               results.forEach(o => {
-                    let item = {
-                         name: `${o.prodName} - $${o.price.toFixed(2)} - remianing stock:${o.qty}`,
-                         value: o.id,
-                         qty: o.qty,
-                         prodName: o.prodName,
-                         price: o.price.toFixed(2)
+
+     con.query(`SELECT d.deptName, SUM(pu.itemPrice*pu.qty) as totalSales
+     FROM purchaseitems as pu INNER JOIN 
+     products as p ON p.id = pu.itemID INNER JOIN 
+     department as d ON d.deptID = p.deptID 
+     GROUP BY d.deptID
+     order by d.deptName
+     `,
+     function(err, deptResult){
+          if(err) throw err;         
+          let numchceked = 0;
+          deptResult.forEach( o => {
+               console.log("Depratment", o.deptName,  "Sales", o.totalSales);
+               async function getSalesPrDept() {
+                    let result = await getItemSales(o.deptID);
+                    console.log("\nDEPARTMENT:", o.deptName.toUpperCase());
+                    let cols = columnify(result, {
+                         minWidth: 8,
+                         config: {
+                              qty: {maxWidth: 4},
+                              Product: {minWidth: 65}
+                         },
+                         columnSplitter: ' | '})
+                    console.log(cols)
+                    numchceked++;
+                    if(numchceked == deptResult.length){
+                         welcomeScreen();
                     }
-                    items.push(item);
-               })
-               items.push({name:"Exit", value:0})
-               con.end();
-               inq.prompt(theQ.purchaseQ(items))
-                    .then(function (resp) {
-                         if(resp.item == "0"){
-                              askDepartment();
-                              return;
-                         }
-                         let qty = parseInt(resp.qty);
-                         curItem = items.find(x => {
-                              return x.value.toString() == resp.item;
-                         });
-                         if (qty < 1) {
-                              getProduct(prodID);
-                              return;
-                         } else if (curItem.qty < qty) {
-                              console.log("There is not enough inventory to fulill your order.");
-                              getProduct(prodID)
-                              return;
-                         }
-                         con = sql.createConnection(conOpts);
-                         con.connect(function (err) {
-                              if (err) throw err;
-                         });
-                         con.query("UPDATE products SET ? WHERE ?", [
-                              {qty: curItem.qty - qty},
-                              {id: resp.item}
-                         ], function (err, results) {
-                              if (err) throw err;
-                              //ADD DATA TO ORDERS  
-                              let val =  moment.utc().format("YYYY-MM-DD HH:mm:ss");
-                              //connvert back to local time
-                              //console.log(moment.utc(val).local().format("YYYY-MM-DD HH:mm:ss"))                      
-                              con.query("INSERT INTO purchaseitems SET ?", 
-                                   {orderID: Math.floor(Math.random()*10000) + 20000,
-                                   qty: qty,
-                                   itemPrice: curItem.price,
-                                   itemID: resp.item,
-                                   purchaseDate: val
-                              }
-                              , function (err, results) {
-                                   if (err) {
-                                        con.end()
-                                        console.log(err);
-                                        throw err;
-                                   }
-                                   console.log(qty + " " + curItem.prodName + " ordered for $"+(curItem.price*qty).toFixed(2)+"\n\n");
-                                   con.end();
-                                   welcomeScreen();
-                              });
-                              
-                              
-                         });
-                    });
-          })
-}
-let askDepartment = function () {
-     let depts = [];
-     con = sql.createConnection(conOpts);
-     con.connect(function (err) {
-          if (err) throw err;
-     });
-     //GET CHOICES FOR DEPT LIST
-     con.query("Select * from department", function (err, results) {
-          if (err) throw err;
-          results.forEach(o => {
-               let dept = {
-                    name: o.deptName,
-                    value: o.deptID
                }
-               depts.push(dept);
-               
-          })
-          depts.push({name:"Exit", value:0})
-          con.end();
-          inq.prompt(theQ.deptQ(depts))
-          .then(function (resp) {
-               if(resp.department == "0" ){
-                    welcomeScreen();
-                    return;
+               function getItemSales(arg) {
+                    return new Promise(resolve => {
+                         con.query(`
+                         SELECT p.prodName as Product,  SUM(pu.qty) as 'Units Sold', SUM(pu.itemPrice*pu.qty) as 'Total Sales'
+                         FROM purchaseitems as pu INNER JOIN 
+                         products as p ON p.id = pu.itemID INNER JOIN 
+                         department as d ON d.deptID = p.deptID 
+                         where d.deptName = '${o.deptName}'
+                         GROUP BY d.deptID, p.prodName
+                         order by d.deptName, 'Total Sales' desc`, function (err, results) {
+                              if (err) throw err;
+                              resolve(results);
+                         });
+                    })
                }
-               getProduct(resp.department);
+               getSalesPrDept();
           });
-     })
+          welcomeScreen();
+     });
+
+
+
+     
+     
 }
-/***** END SHOPPING SECTION *****/
-
-
-
 
 
 /***** INV CHECK SECTION *****/
@@ -152,7 +98,7 @@ let checkStock = function () {
                          },
                          columnSplitter: ' | '})
                     console.log(cols)
-                    console.log("\n\n")
+                    console.log("\n")
                     numchceked++;
                     if(numchceked == results.length){
                          welcomeScreen();
@@ -324,6 +270,9 @@ let welcomeScreen = function () {
                     case "newProd":
                          newProd();
                          break;
+                    case "viewSales":
+                         getSales();
+                         break; 
                     default:
                          if(con.state == "authenticated")
                               con.end();
