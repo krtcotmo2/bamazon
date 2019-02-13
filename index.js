@@ -197,7 +197,38 @@ function addInventory(id, qty){
 /***** END ADD INVETORY SECTION *****/
 
 
+let newDept = function(){
+     con = sql.createConnection(conOpts);
+     con.connect (function(err){
+          if(err) throw err;
+     });
+     inq.prompt(theQ.newDeptQs)
+     .then(function(response){
+          confirmAddDept(response);
+     })
 
+     function confirmAddDept(arg){
+          inq.prompt(theQ.confrimNewDeptQ(arg))
+          .then(function(resp){
+               if(resp.confirmed){
+                    con = sql.createConnection(conOpts);
+                    con.connect(function(err){
+                         if (err)throw err;
+                         console.log("connected");
+                    });
+                    let qury = "INSERT INTO department SET ?";
+                    con.query(qury, arg, function(err, results){
+                         if(err) throw err;
+                         console.log("Added", arg.deptName, "to departments");
+                         con.end();
+                         welcomeScreen();
+                    })
+               }else{
+                    welcomeScreen();
+               }
+          });
+     }
+}
 
 
 let newProd = function () {
@@ -269,6 +300,9 @@ let welcomeScreen = function () {
                          break;
                     case "newProd":
                          newProd();
+                         break;
+                    case "newDept":
+                         newDept();
                          break;
                     case "viewSales":
                          getSales();
